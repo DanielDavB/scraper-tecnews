@@ -21,9 +21,12 @@ def parse_notice(link,today):
                 title = title.replace('\"', '')
                 title = title.replace('\n', '')
                 body = parsed.xpath(XPATH_BODY)
+                folder_path = os.path.join("Scraped News", today)
+                os.makedirs(folder_path, exist_ok=True)
+                file_path = os.path.join(folder_path, f'{title}.txt')
             except IndexError:
                 return
-            with open(f'{today}/{title}.txt', 'w', encoding='utf-8') as f:
+            with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(title)
                 f.write('\n\n')
                 f.write('\n\n')
@@ -37,17 +40,17 @@ def parse_notice(link,today):
             
 
 
-def parse_home(): #Get links
+def parse_home(page_number): #Get links
+    url = f"{HOME_URL}?page={page_number}"
     try:
-        response = requests.get(HOME_URL)
+        response = requests.get(url)
         if response.status_code == 200:
             home = response.content.decode('utf-8')
             parsed = html.fromstring(home)
             links_to_notice = parsed.xpath(XPATH_LINK_TO_ARTICLE)
             
             today = datetime.date.today().strftime('%d-%m-%Y')
-            if not os.path.isdir(today):
-                os.mkdir(today)
+            
             
             for link in links_to_notice:
                 parse_notice(link, today)   
@@ -58,7 +61,9 @@ def parse_home(): #Get links
 
 
 def run():
-    parse_home()
+    num_pages = 5  # Number of pages to scrape
+    for page_number in range(1, num_pages + 1):
+        parse_home(page_number)
 
 
 if __name__ == '__main__':

@@ -1,1 +1,3 @@
-Links = $x('//a[@class="block hover:bg-gray-50"]/@href').map(x => x.value)
+Links = //a[@class="block hover:bg-gray-50"]/@href
+Title = //h2[@class="text-lg sm:text-xl text-gray-900 font-extrabold tracking-tightwhitespace-pre-line"]/text()
+Body = //div[@class=" text-gray-700 markdown"]/ul/li/text()

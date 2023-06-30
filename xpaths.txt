@@ -1,0 +1,1 @@
+Links = $x('//a[@class="block hover:bg-gray-50"]/@href').map(x => x.value)

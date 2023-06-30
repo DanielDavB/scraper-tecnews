@@ -2,8 +2,9 @@ import requests
 import lxml.html as html 
 import datetime
 import os
+import re
 
-HOME_URL = "https://www.descubre.vc/"
+HOME_URL = "https://www.descubre.vc"
 XPATH_LINK_TO_ARTICLE = '//a[@class="block hover:bg-gray-50"]/@href'
 XPATH_TITLE = '//h2[@class="text-lg sm:text-xl text-gray-900 font-extrabold tracking-tightwhitespace-pre-line"]/text()'
 XPATH_BODY = '//div[@class=" text-gray-700 markdown"]/ul/li/text()'
@@ -11,7 +12,7 @@ XPATH_BODY = '//div[@class=" text-gray-700 markdown"]/ul/li/text()'
 def parse_notice(link,today):
     try:
         
-        response = requests.get('https://www.descubre.vc'+link)
+        response = requests.get(HOME_URL+link)
         if response.status_code == 200:
             notice = response.content.decode('utf-8')
             parsed = html.fromstring(notice)
@@ -20,6 +21,8 @@ def parse_notice(link,today):
                 title = parsed.xpath(XPATH_TITLE)[0]
                 title = title.replace('\"', '')
                 title = title.replace('\n', '')
+                title = sanitize_filename(title)  # Sanitize the title
+
                 body = parsed.xpath(XPATH_BODY)
                 folder_path = os.path.join("Scraped News", today)
                 os.makedirs(folder_path, exist_ok=True)
@@ -38,10 +41,15 @@ def parse_notice(link,today):
     except ValueError as ve:
         print(ve)
             
+            
+def sanitize_filename(filename):
+    # Remove invalid characters from the filename
+    return re.sub(r'[\/:*?"<>|]', '', filename)
 
 
 def parse_home(page_number): #Get links
     url = f"{HOME_URL}?page={page_number}"
+    
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -62,7 +70,7 @@ def parse_home(page_number): #Get links
 
 def run():
     num_pages = 5  # Number of pages to scrape
-    for page_number in range(1, num_pages + 1):
+    for page_number in range(num_pages + 1):
         parse_home(page_number)
 
 

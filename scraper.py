@@ -3,13 +3,14 @@ import lxml.html as html
 import datetime
 import os
 import re
+import csv
 
 HOME_URL = "https://www.descubre.vc"
 XPATH_LINK_TO_ARTICLE = '//a[@class="block hover:bg-gray-50"]/@href'
 XPATH_TITLE = '//h2[@class="text-lg sm:text-xl text-gray-900 font-extrabold tracking-tightwhitespace-pre-line"]/text()'
 XPATH_BODY = '//div[@class=" text-gray-700 markdown"]/ul/li/text()'
 
-def parse_notice(link,today):
+def parse_notice(link, today, csv_writer):
     try:
         
         response = requests.get(HOME_URL+link)
@@ -24,18 +25,12 @@ def parse_notice(link,today):
                 title = sanitize_filename(title)  # Sanitize the title
 
                 body = parsed.xpath(XPATH_BODY)
-                folder_path = os.path.join("Scraped News", today)
-                os.makedirs(folder_path, exist_ok=True)
-                file_path = os.path.join(folder_path, f'{title}.txt')
+                csv_writer.writerow([title] + body)
+                
+                
             except IndexError:
                 return
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(title)
-                f.write('\n\n')
-                f.write('\n\n')
-                for p in body:
-                    f.write(p)
-                    f.write('\n')
+
         else:
             raise ValueError(f'Error: {response.status_code}')    
     except ValueError as ve:
@@ -47,7 +42,7 @@ def sanitize_filename(filename):
     return re.sub(r'[\/:*?"<>|]', '', filename)
 
 
-def parse_home(page_number): #Get links
+def parse_home(page_number, csv_writer): #Get links
     url = f"{HOME_URL}?page={page_number}"
     
     try:
@@ -61,7 +56,7 @@ def parse_home(page_number): #Get links
             
             
             for link in links_to_notice:
-                parse_notice(link, today)   
+                parse_notice(link, today, csv_writer)   
         else:
             raise ValueError(f'Error: {response.status_code}')
     except ValueError as ve:
@@ -69,9 +64,23 @@ def parse_home(page_number): #Get links
 
 
 def run():
-    num_pages = 5  # Number of pages to scrape
-    for page_number in range(num_pages + 1):
-        parse_home(page_number)
+    
+    num_pages = 60  # Number of pages to scrape
+    
+    if os.path.exists("Scraped News"): #Checks if the folder exists
+        pass
+    else:
+        print(f"Creating directory: Scraped News") #Creates teh folder
+        os.mkdir("Scraped News")
+    
+    file_path = os.path.join("Scraped News", "scraped_data.csv")
+    
+    with open(file_path, 'w', encoding='utf-8', newline='') as f:
+        csv_writer = csv.writer(f)
+        csv_writer.writerow(['Title', 'Body'])  # Write headers
+
+        for page_number in range(num_pages + 1):
+            parse_home(page_number, csv_writer)
 
 
 if __name__ == '__main__':
